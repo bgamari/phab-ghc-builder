@@ -137,9 +137,12 @@ archiveFile :: FilePath -> BuildM ()
 archiveFile path = do
     opts <- getOptions
     let compressedPath = path <.> "xz"
-        BuildId buildDir = buildId opts
-        finalPath = (archivePath opts </> buildDir </> compressedPath)
-    cmd "xz" "-9" "-o" finalPath path
+        BuildId build = buildId opts
+        archiveDir = archivePath opts </> build
+        finalPath = archiveDir </> compressedPath
+    () <- cmd "xz" "-9f" "-f" finalPath path
+    mkdir_p archiveDir
+    mv compressedPath finalPath
 
 showTestsuiteSummary :: RepoDir -> BuildM ()
 showTestsuiteSummary (RepoDir dir) = do
