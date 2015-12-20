@@ -29,7 +29,7 @@ import Servant
 import Servant.Client
 
 newtype Phid = Phid T.Text
-             deriving (FromJSON, ToJSON, ToText)
+             deriving (FromJSON, ToJSON, FromText, ToText)
 
 newtype ApiToken = ApiToken T.Text
                  deriving (FromJSON, ToJSON, ToText)

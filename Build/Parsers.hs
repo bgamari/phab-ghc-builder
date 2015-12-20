@@ -2,7 +2,6 @@
 
 module Build.Parsers where
 
-import qualified Data.Text as T
 import Data.String (fromString)
 import Options.Applicative
 import Build
@@ -13,7 +12,7 @@ options = Options
                (short 't' <> long "threads" <> value Nothing)
     <*> option (Just . fromString <$> str)
                (short 'r' <> long "reference-repo" <> value Nothing)
-    <*> option (BuildId . T.pack <$> str)
+    <*> option (BuildId <$> auto)
                (short 'B' <> long "build-id")
     <*> option (fromString <$> str)
                (short 'a' <> long "archive" <> metavar "DIR" <> value ".")

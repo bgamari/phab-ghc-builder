@@ -12,6 +12,8 @@ import Data.Aeson
 import Servant
 import Servant.Client
 import Servant.Server
+import Network.Wai
+import Network.Wai.Handler.Warp
 
 import Api
 import Build
@@ -24,7 +26,8 @@ data ServerOpts = ServerOpts { maxBuilds :: Int  -- ^ maximum number of concurre
                              , buildOpts :: Options
                              }
 
-opts = ServerOpts
+serverOpts :: Parser ServerOpts
+serverOpts = ServerOpts
     <$> option auto (long "max-builds" <> short 'B' <> help "Maximum number of concurrent builds")
     <*> option auto (long "root" <> short 'd' <> help "Source root directory")
     <*> option auto (long "port" <> short 'p' <> help "Port number on which to listen")
@@ -32,8 +35,14 @@ opts = ServerOpts
 
 -- http://host/build/commit?id=${build.id}&commit=${buildable.commit}&phid=${target.phid}
 
+app :: ServerOpts -> Application
+app opts = serve Api.api (server opts)
+
 main :: IO ()
-main = return ()
+main = do
+  opts <- execParser $ info (helper <*> serverOpts) mempty
+  run (port opts) $ app opts
+  return ()
 
 server :: ServerOpts -> Server Api
 server opts = buildDiff opts :<|> buildCommit opts
