@@ -48,14 +48,6 @@ data Options = Options { maxThreads :: Maybe Int
                        , archivePath :: FilePath
                        }
 
-data Task = BuildDiff { repository :: Repository
-                      , revision :: Revision
-                      , diff :: Diff
-                      }
-          | BuildCommit { repository :: Repository
-                        , commit :: Commit
-                        }
-
 type BuildM = ReaderT Options Sh
 
 getOptions :: BuildM Options
