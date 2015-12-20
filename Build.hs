@@ -21,10 +21,19 @@ import qualified Filesystem.Path.CurrentOS as Path
 import Prelude hiding (FilePath)
 
 -- * Things given to us by Harbormaster
+-- | A Harbormaster repository name, e.g. @"rGHC"@
 newtype Repository = Repo Text
+
+-- | A git commit SHA
 newtype Commit = Commit Text
+
+-- | A Harbormaster revision number, e.g. @D1234@
 newtype Revision = Rev Integer
+
+-- | A Harbormaster diff number, e.g. @R1234@
 newtype Diff = Diff Integer
+
+-- | A Harbormaster build ID, e.g. @B1234@
 newtype BuildId = BuildId Text
 
 repo :: Repository
