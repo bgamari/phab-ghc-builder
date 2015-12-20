@@ -10,23 +10,13 @@ import Shelly.Lifted
 import Options.Applicative as O
 
 import Build
+import Build.Parsers
 
 main :: IO ()
 main = do
     (opts, action) <- execParser $ info (helper <*> ((,) <$> options <*> task)) mempty
     code <- flip runBuildM opts $ verbosely action
     exitWith code
-
-options :: Parser Options
-options = Options
-    <$> option auto
-               (short 't' <> long "threads" <> value Nothing)
-    <*> option (Just . fromString <$> str)
-               (short 'r' <> long "reference-repo" <> value Nothing)
-    <*> option (BuildId . T.pack <$> str)
-               (short 'B' <> long "build-id")
-    <*> option (fromString <$> str)
-               (short 'a' <> long "archive" <> metavar "DIR" <> value ".")
 
 task :: Parser (BuildM ExitCode)
 task = subparser $ buildDiff <> buildCommit
