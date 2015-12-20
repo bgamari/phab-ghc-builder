@@ -21,7 +21,7 @@ data Message = Message { msgType  :: MessageType
                        }
 
 data MessageType = TargetPassed
-                 | Targetfailed
+                 | TargetFailed
                  | Work
 
 data Outcome = Pass | Fail | Skip | Broken | Unsound
@@ -34,6 +34,11 @@ data UnitResult = UnitResult { unitName      :: T.Text
                              , unitPath      :: Maybe FilePath
                              }
 
+instance ToJSON MessageType where
+  toJSON TargetPassed = "passed"
+  toJSON TargetFailed = "failed"
+  toJSON Work         = "work"
+
 instance ToJSON Message where
   toJSON m = object
       [ "type"   .= msgType m
@@ -41,9 +46,9 @@ instance ToJSON Message where
       ]
 
 instance ToJSON UnitResult where
-  toJSON r = object
+  toJSON r = object $
       [ "name"   .= unitName r
-      , "result" .= res
+      , "result" .= unitResult r
       ] ++
       catMaybes
       [ ("namespace" .=) <$> unitNamespace r
@@ -52,10 +57,11 @@ instance ToJSON UnitResult where
       , ("path"      .=) <$> unitPath r
       ]
     where
-      res :: T.Text
-      res = case unitResult r of
-              Pass    -> "pass"
-              Fail    -> "fail"
-              Skip    -> "skip"
-              Broken  -> "broken"
-              Unsound -> "unsound"
+
+instance ToJSON Outcome where
+  toJSON r = case r of
+               Pass    -> "pass"
+               Fail    -> "fail"
+               Skip    -> "skip"
+               Broken  -> "broken"
+               Unsound -> "unsound"
