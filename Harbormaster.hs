@@ -1,20 +1,60 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DataKinds #-}
 
 -- | Harbormaster HTTP message
 -- See https://phabricator.haskell.org/conduit/method/harbormaster.sendmessage/
 
 module Harbormaster
-    ( -- * Messages
-      Message(..)
+    ( -- * Harbormaster API
+      sendMessage
+    , Phid(..)
+    , ApiToken(..)
+      -- * Messages
+    , Message(..)
     , MessageType(..)
       -- * Unit test results
     , Outcome(..)
     , UnitResult(..)
     ) where
 
+import Control.Monad.Trans.Either
+
 import Data.Aeson
 import Data.Maybe
 import qualified Data.Text as T
+
+import Servant
+import Servant.Client
+
+newtype Phid = Phid T.Text
+             deriving (FromJSON, ToJSON, ToText)
+
+newtype ApiToken = ApiToken T.Text
+                 deriving (FromJSON, ToJSON, ToText)
+
+sendMessage :: BaseUrl -> ApiToken -> Phid -> Message -> EitherT ServantError IO ()
+sendMessage baseUrl apiToken buildTargetPhid msg =
+    client api baseUrl (Just apiToken) (Just buildTargetPhid)
+                                       (Just $ msgType msg)
+                                       (Just $ AsJson $ msgUnits msg)
+  where
+    api :: Proxy SendMessage
+    api = Proxy
+
+newtype AsJson a = AsJson a
+
+instance ToJSON a => ToText (AsJson a) where
+  toText = undefined
+
+-- | The @harbormaster.sendmessage@ endpoint.
+type SendMessage = "api" :> "sendmessage"
+                   :> QueryParam "api.token" ApiToken
+                   :> QueryParam "buildTargetPHID" Phid
+                   :> QueryParam "type" MessageType
+                   :> QueryParam "units" (AsJson [UnitResult])
+                   :> Get '[JSON] ()
 
 data Message = Message { msgType  :: MessageType
                        , msgUnits :: [UnitResult]
@@ -34,16 +74,10 @@ data UnitResult = UnitResult { unitName      :: T.Text
                              , unitPath      :: Maybe FilePath
                              }
 
-instance ToJSON MessageType where
-  toJSON TargetPassed = "passed"
-  toJSON TargetFailed = "failed"
-  toJSON Work         = "work"
-
-instance ToJSON Message where
-  toJSON m = object
-      [ "type"   .= msgType m
-      , "unit"   .= msgUnits m
-      ]
+instance ToText MessageType where
+  toText TargetPassed = "passed"
+  toText TargetFailed = "failed"
+  toText Work         = "work"
 
 instance ToJSON UnitResult where
   toJSON r = object $
