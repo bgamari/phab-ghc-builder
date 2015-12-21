@@ -22,48 +22,12 @@ import qualified Filesystem.Path.CurrentOS as Path
 import Prelude hiding (FilePath)
 
 import Servant
+import Phabricator.Types
 
 -- * Things given to us by Harbormaster
--- | A Harbormaster repository name, e.g. @"rGHC"@
-newtype Repository = Repo Text
-                   deriving (Eq, Ord, Show, ToText, FromText)
-
 -- | A git commit SHA
 newtype Commit = Commit Text
                deriving (Eq, Ord, Show, ToText, FromText)
-
--- | A Harbormaster revision number, e.g. @D1234@
-newtype Revision = Rev Integer
-                 deriving (Eq, Ord, Show)
-
--- | A Harbormaster diff number, e.g. @R1234@
-newtype Diff = Diff Integer
-             deriving (Eq, Ord, Show)
-
--- | A Harbormaster build ID, e.g. @B1234@
-newtype BuildId = BuildId Integer
-                deriving (Eq, Ord, Show)
-
-fromTextPrefix :: Char -> T.Text -> Maybe Integer
-fromTextPrefix prefix s
-  | c:rest <- T.unpack s
-  , c == prefix
-  , [(n,"")] <- reads rest
-  = Just n
-  | otherwise
-  = Nothing
-
-toTextPrefix :: Char -> Integer -> T.Text
-toTextPrefix c n = T.singleton c <> T.pack (show n)
-
-instance ToText Revision where toText (Rev n) = toTextPrefix 'R' n
-instance FromText Revision where fromText t = Rev <$> fromTextPrefix 'R' t
-
-instance ToText Diff where toText (Diff n) = toTextPrefix 'D' n
-instance FromText Diff where fromText t = Diff <$> fromTextPrefix 'D' t
-
-instance ToText BuildId where toText (BuildId n) = toTextPrefix 'B' n
-instance FromText BuildId where fromText t = BuildId <$> fromTextPrefix 'B' t
 
 repo :: Repository
 repo = Repo "rGHC"

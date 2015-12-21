@@ -23,6 +23,7 @@ import Network.Wai.Handler.Warp as Warp
 import Api
 import Build
 import Build.Parsers
+import Phabricator.Types
 import Phabricator.Harbormaster
 
 data ServerOpts = ServerOpts { maxBuilds :: Int  -- ^ maximum number of concurrent builds

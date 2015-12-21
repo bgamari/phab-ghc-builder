@@ -8,6 +8,7 @@ module Api where
 import Servant
 
 import Build
+import Phabricator.Types
 import Phabricator.Harbormaster
 
 -- | Build a differential.
