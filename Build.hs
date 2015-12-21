@@ -34,12 +34,15 @@ newtype Commit = Commit Text
 
 -- | A Harbormaster revision number, e.g. @D1234@
 newtype Revision = Rev Integer
+                 deriving (Eq, Ord, Show)
 
 -- | A Harbormaster diff number, e.g. @R1234@
 newtype Diff = Diff Integer
+             deriving (Eq, Ord, Show)
 
 -- | A Harbormaster build ID, e.g. @B1234@
 newtype BuildId = BuildId Integer
+                deriving (Eq, Ord, Show)
 
 fromTextPrefix :: Char -> T.Text -> Maybe Integer
 fromTextPrefix prefix s
