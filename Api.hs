@@ -11,7 +11,7 @@ import Build
 import Harbormaster
 
 -- | Build a differential.
--- @http://host/build/diff?id=${build.id}&rev=${buildable.revision}&diff=${buildable.diff}&base_commit=${buildable.commit}&phid=${target.phid}@
+-- @http://host/build/diff?id=B${build.id}&rev=R${buildable.revision}&diff=D${buildable.diff}&base_commit=${buildable.commit}&phid=${target.phid}@
 type BuildDiff = "build" :> "diff"
                  :> QueryParam "id" BuildId
                  :> QueryParam "rev" Revision
@@ -21,7 +21,7 @@ type BuildDiff = "build" :> "diff"
                  :> Post '[JSON] ()
 
 -- | Build a commit.
--- @http://host/build/commit?id=${build.id}&commit=${buildable.commit}&phid=${target.phid}@
+-- @http://host/build/commit?id=B${build.id}&commit=${buildable.commit}&phid=${target.phid}@
 type BuildCommit = "build" :> "commit"
                    :> QueryParam "id" BuildId
                    :> QueryParam "commit" Commit
