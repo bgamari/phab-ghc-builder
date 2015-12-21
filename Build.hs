@@ -198,8 +198,9 @@ testDiff rootDir rev diff baseCommit = chdir rootDir $ do
     updateSubmodules repoDir
     applyDiff repoDir diff
     updateSubmodules repoDir
-    code <- validate repoDir "build.log"
-    archiveFile "build.log"
+    logPath <- canonicalize "build.log"
+    code <- validate repoDir logPath
+    archiveFile logPath
     showTestsuiteSummary repoDir
     return code
 
@@ -209,7 +210,8 @@ testCommit rootDir commit = chdir rootDir $ do
     cloneGhc repoDir
     checkout repoDir commit
     updateSubmodules repoDir
-    code <- validate repoDir "build.log"
-    archiveFile "build.log"
+    logPath <- canonicalize "build.log"
+    code <- validate repoDir logPath
+    archiveFile logPath
     showTestsuiteSummary repoDir
     return code
