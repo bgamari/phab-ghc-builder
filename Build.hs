@@ -88,8 +88,10 @@ getBuildId = do
     return buildId
 
 runBuildM :: BuildM a -> Options -> BuildId -> IO a
-runBuildM action opts bid =
-    shelly $ runReaderT action (BuildDesc opts bid)
+runBuildM action opts bid = shelly $ do
+    ref <- traverse canonicalize (referenceRepo opts)
+    let opts' = opts { referenceRepo = ref }
+    runReaderT action (BuildDesc opts' bid)
 
 cpuCount :: BuildM Int
 cpuCount =
@@ -186,8 +188,8 @@ showTestsuiteSummary (RepoDir dir) = do
         T.putStrLn c
 
 testDiff :: FilePath -> Revision -> Diff -> Commit -> BuildM ExitCode
-testDiff rootDir rev diff baseCommit = do
-    let repoDir = RepoDir $ rootDir </> "ghc-test"
+testDiff rootDir rev diff baseCommit = chdir rootDir $ do
+    let repoDir = RepoDir "ghc-test"
     cloneGhc repoDir
     checkout repoDir baseCommit
     updateSubmodules repoDir
@@ -199,8 +201,8 @@ testDiff rootDir rev diff baseCommit = do
     return code
 
 testCommit :: FilePath -> Commit -> BuildM ExitCode
-testCommit rootDir commit = do
-    let repoDir = RepoDir $ rootDir </> "ghc-test"
+testCommit rootDir commit = chdir rootDir $ do
+    let repoDir = RepoDir "ghc-test"
     cloneGhc repoDir
     checkout repoDir commit
     updateSubmodules repoDir
