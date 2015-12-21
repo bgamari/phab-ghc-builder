@@ -128,6 +128,8 @@ validate repoDir log = timeIt "validating" $ inRepo repoDir $ do
                   , ErrorHandle $ UseHandle hdl
                   ]
     errExit False $ do
+        opts <- getOptions
+        mapM_ (setenv "THREADS" . T.pack . show) (maxThreads opts)
         runHandles "sh" ["validate"] handles (\_ _ _ -> return ())
         c <- lastExitCode
         case c of
