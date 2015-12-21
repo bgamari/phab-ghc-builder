@@ -116,7 +116,7 @@ timeIt what action = do
     r <- action
     end <- liftIO getCurrentTime
     let delta = end `diffUTCTime` start
-    logStr $ "took "<>show delta<>"\n"
+    logStr $ " took "<>show delta<>"\n"
     return r
 
 cloneGhc :: RepoDir -> BuildM ()
@@ -147,7 +147,7 @@ applyDiff repoDir (Diff d) = inRepo repoDir $
     cmd "arc" "patch" "--nobranch" "--force" "--nocommit" "--diff" (T.pack $ show d)
 
 checkout :: RepoDir -> Commit -> BuildM ()
-checkout repoDir (Commit commit) = timeIt "checking out commit " $ inRepo repoDir $
+checkout repoDir (Commit commit) = timeIt "checking out commit" $ inRepo repoDir $
     cmd "git" "checkout" commit
 
 updateSubmodules :: RepoDir -> BuildM ()
