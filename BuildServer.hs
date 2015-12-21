@@ -29,7 +29,8 @@ data ServerOpts = ServerOpts { maxBuilds :: Int  -- ^ maximum number of concurre
                              , buildOpts :: Options
                              }
 
-data BuildTask = BuildTask { buildPhid :: Phid
+data BuildTask = BuildTask { buildPhid   :: Phid
+                           , buildId     :: BuildId
                            , buildAction :: BuildM ExitCode
                            }
 
@@ -75,12 +76,12 @@ buildDiff :: ServerOpts -> (BuildTask -> IO ())
           -> Maybe Commit -> Maybe Phid
           -> EitherT ServantErr IO ()
 buildDiff opts queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) =
-  liftIO $ queueBuild $ BuildTask phid $ testDiff rev diff baseCommit
+  liftIO $ queueBuild $ BuildTask phid buildId $ testDiff rev diff baseCommit
 buildDiff _ _ _ _ _ _ _ = fail "ouch"
 
 buildCommit :: ServerOpts -> (BuildTask -> IO ())
             -> Maybe BuildId -> Maybe Commit -> Maybe Phid
             -> EitherT ServantErr IO ()
 buildCommit opts queueBuild (Just buildId) (Just commit) (Just phid) =
-  liftIO $ queueBuild $ BuildTask phid $ testCommit commit
+  liftIO $ queueBuild $ BuildTask phid buildId $ testCommit commit
 buildCommit _ _ _ _ _ = fail "ouch"
