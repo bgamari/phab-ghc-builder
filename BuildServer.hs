@@ -5,6 +5,7 @@ import Control.Exception
 import Control.Monad (forever, replicateM_)
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class
+import Control.Concurrent.Async
 import Control.Concurrent.STM
 import System.Exit
 
@@ -67,7 +68,7 @@ main :: IO ()
 main = do
   opts <- execParser $ info (helper <*> serverOpts) mempty
   buildQueue <- newTQueueIO
-  replicateM_ (maxBuilds opts) $ worker opts buildQueue
+  replicateM_ (maxBuilds opts) $ async $ worker opts buildQueue
   run (port opts) $ serve Api.api $ server opts (atomically . writeTQueue buildQueue)
   return ()
 
