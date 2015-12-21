@@ -9,6 +9,7 @@ import qualified Data.Text as T
 import Shelly.Lifted
 import Options.Applicative as O
 
+import Phabricator.Types
 import Build
 import Build.Parsers
 
