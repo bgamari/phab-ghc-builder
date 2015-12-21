@@ -22,8 +22,11 @@ module Harbormaster
 import Control.Monad.Trans.Either
 
 import Data.Aeson
+import Data.Aeson.Encode
 import Data.Maybe
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TB
 
 import Servant
 import Servant.Client
@@ -46,7 +49,7 @@ sendMessage baseUrl apiToken buildTargetPhid msg =
 newtype AsJson a = AsJson a
 
 instance ToJSON a => ToText (AsJson a) where
-  toText = undefined
+  toText (AsJson v) = TL.toStrict $ TB.toLazyText $ encodeToTextBuilder $ toJSON v
 
 -- | The @harbormaster.sendmessage@ endpoint.
 type SendMessage = "api" :> "sendmessage"
