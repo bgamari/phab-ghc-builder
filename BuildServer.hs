@@ -7,10 +7,12 @@ import Control.Monad.Trans.Either
 import Control.Monad.IO.Class
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Data.String (fromString)
 import System.Exit
 
 import Options.Applicative
 import qualified Data.Text as T
+import System.IO.Temp
 
 import Data.Aeson
 import Servant
@@ -33,7 +35,7 @@ data ServerOpts = ServerOpts { maxBuilds :: Int  -- ^ maximum number of concurre
 
 data BuildTask = BuildTask { buildPhid   :: Phid
                            , buildId     :: BuildId
-                           , buildAction :: BuildM ExitCode
+                           , buildAction :: FilePath -> BuildM ExitCode
                            }
 
 type BuildQueue = TQueue BuildTask
@@ -55,14 +57,15 @@ handleAny = print
 worker :: ServerOpts -> TQueue BuildTask -> IO ()
 worker opts buildQueue = forever $ handle handleAny $ do
   b <- atomically $ readTQueue buildQueue
-  let phid = buildPhid b
-  code <- runBuildM (buildAction b) (buildOpts opts) (buildId b)
-  r <- runEitherT $ case code of
-    ExitSuccess   -> sendMessage phabBase (apiToken opts) phid $ Message TargetPassed []
-    ExitFailure _ -> sendMessage phabBase (apiToken opts) phid $ Message TargetFailed []
-  case r of
-    Left err -> error $ show err
-    Right () -> return ()
+  withTempDirectory (rootDir opts) "build." $ \dir -> do
+    let phid = buildPhid b
+    code <- runBuildM (buildAction b dir) (buildOpts opts) (buildId b)
+    r <- runEitherT $ case code of
+      ExitSuccess   -> sendMessage phabBase (apiToken opts) phid $ Message TargetPassed []
+      ExitFailure _ -> sendMessage phabBase (apiToken opts) phid $ Message TargetFailed []
+    case r of
+      Left err -> error $ show err
+      Right () -> return ()
 
 main :: IO ()
 main = do
@@ -81,12 +84,12 @@ buildDiff :: ServerOpts -> (BuildTask -> IO ())
           -> Maybe Commit -> Maybe Phid
           -> EitherT ServantErr IO ()
 buildDiff opts queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) =
-  liftIO $ queueBuild $ BuildTask phid buildId $ testDiff rev diff baseCommit
+  liftIO $ queueBuild $ BuildTask phid buildId $ \dir -> testDiff (fromString dir) rev diff baseCommit
 buildDiff _ _ _ _ _ _ _ = fail "ouch"
 
 buildCommit :: ServerOpts -> (BuildTask -> IO ())
             -> Maybe BuildId -> Maybe Commit -> Maybe Phid
             -> EitherT ServantErr IO ()
 buildCommit opts queueBuild (Just buildId) (Just commit) (Just phid) =
-  liftIO $ queueBuild $ BuildTask phid buildId $ testCommit commit
+  liftIO $ queueBuild $ BuildTask phid buildId $ \dir -> testCommit (fromString dir) commit
 buildCommit _ _ _ _ _ = fail "ouch"

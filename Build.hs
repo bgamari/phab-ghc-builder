@@ -185,9 +185,9 @@ showTestsuiteSummary (RepoDir dir) = do
         putStrLn "================== Testsuite summary =================="
         T.putStrLn c
 
-testDiff :: Revision -> Diff -> Commit -> BuildM ExitCode
-testDiff rev diff baseCommit = do
-    let repoDir = RepoDir "ghc-test"
+testDiff :: FilePath -> Revision -> Diff -> Commit -> BuildM ExitCode
+testDiff rootDir rev diff baseCommit = do
+    let repoDir = RepoDir $ rootDir </> "ghc-test"
     cloneGhc repoDir
     checkout repoDir baseCommit
     updateSubmodules repoDir
@@ -198,9 +198,9 @@ testDiff rev diff baseCommit = do
     showTestsuiteSummary repoDir
     return code
 
-testCommit :: Commit -> BuildM ExitCode
-testCommit commit = do
-    let repoDir = RepoDir "ghc-test"
+testCommit :: FilePath -> Commit -> BuildM ExitCode
+testCommit rootDir commit = do
+    let repoDir = RepoDir $ rootDir </> "ghc-test"
     cloneGhc repoDir
     checkout repoDir commit
     updateSubmodules repoDir

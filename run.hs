@@ -27,12 +27,13 @@ task = subparser $ buildDiff <> buildCommit
     commit = option (Commit . T.pack <$> str) (short 'c' <> long "commit" <> metavar "COMMIT")
 
     buildDiff = O.command "diff" $ info
-        (testDiff <$> option (Rev <$> auto) (short 'r' <> long "revision" <> metavar "REV")
+        (testDiff <$> pure "."
+                  <*> option (Rev <$> auto) (short 'r' <> long "revision" <> metavar "REV")
                   <*> option (Diff <$> auto) (short 'd' <> long "diff" <> metavar "DIFF")
                   <*> commit
         )
         mempty
 
     buildCommit = O.command "commit" $ info
-        (testCommit <$> commit)
+        (testCommit "." <$> commit)
         mempty
