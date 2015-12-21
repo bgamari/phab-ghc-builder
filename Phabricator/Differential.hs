@@ -15,8 +15,9 @@ import qualified Data.Text as T
 import Servant
 import Servant.Client
 import Phabricator.Types
+import Phabricator.Remarkup
 
-data Comment = Comment { cmtBody   :: Maybe T.Text
+data Comment = Comment { cmtBody   :: Maybe Remarkup
                        , cmtAction :: Maybe T.Text -- TODO
                        , cmtSilent :: Bool
                        }
