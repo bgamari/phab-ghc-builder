@@ -14,11 +14,8 @@ import Options.Applicative
 import qualified Data.Text as T
 import System.IO.Temp
 
-import Data.Aeson
 import Servant
 import Servant.Client
-import Servant.Server
-import Network.Wai
 import Network.Wai.Handler.Warp
 
 import Api
@@ -37,8 +34,6 @@ data BuildTask = BuildTask { buildPhid   :: Phid
                            , buildId     :: BuildId
                            , buildAction :: FilePath -> BuildM ExitCode
                            }
-
-type BuildQueue = TQueue BuildTask
 
 serverOpts :: Parser ServerOpts
 serverOpts = ServerOpts
@@ -72,24 +67,24 @@ main = do
   opts <- execParser $ info (helper <*> serverOpts) mempty
   buildQueue <- newTQueueIO
   replicateM_ (maxBuilds opts) $ async $ worker opts buildQueue
-  run (port opts) $ serve Api.api $ server opts (atomically . writeTQueue buildQueue)
+  run (port opts) $ serve Api.api $ server (atomically . writeTQueue buildQueue)
   return ()
 
-server :: ServerOpts -> (BuildTask -> IO ()) -> Server Api
-server opts q = buildDiff opts q :<|> buildCommit opts q
+server :: (BuildTask -> IO ()) -> Server Api
+server q = buildDiff q :<|> buildCommit q
 
-buildDiff :: ServerOpts -> (BuildTask -> IO ())
+buildDiff :: (BuildTask -> IO ())
           -> Maybe BuildId
           -> Maybe Revision -> Maybe Diff
           -> Maybe Commit -> Maybe Phid
           -> EitherT ServantErr IO ()
-buildDiff opts queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) =
+buildDiff queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) =
   liftIO $ queueBuild $ BuildTask phid buildId $ \dir -> testDiff (fromString dir) rev diff baseCommit
-buildDiff _ _ _ _ _ _ _ = fail "ouch"
+buildDiff _ _ _ _ _ _ = fail "ouch"
 
-buildCommit :: ServerOpts -> (BuildTask -> IO ())
+buildCommit :: (BuildTask -> IO ())
             -> Maybe BuildId -> Maybe Commit -> Maybe Phid
             -> EitherT ServantErr IO ()
-buildCommit opts queueBuild (Just buildId) (Just commit) (Just phid) =
+buildCommit queueBuild (Just buildId) (Just commit) (Just phid) =
   liftIO $ queueBuild $ BuildTask phid buildId $ \dir -> testCommit (fromString dir) commit
-buildCommit _ _ _ _ _ = fail "ouch"
+buildCommit _ _ _ _ = fail "ouch"
