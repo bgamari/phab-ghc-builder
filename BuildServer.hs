@@ -7,6 +7,7 @@ import Control.Monad.Trans.Either
 import Control.Monad.IO.Class
 import Control.Concurrent.Async
 import Control.Concurrent.STM
+import Data.Maybe (mapMaybe)
 import Data.String (fromString)
 import System.Exit
 
@@ -50,6 +51,14 @@ phabBase = BaseUrl Https "phabricator.haskell.org" 443
 
 handleAny :: SomeException -> IO ()
 handleAny = print
+
+newtype TestName = TestName T.Text
+                 deriving (Show, Eq, Ord)
+
+findFailedTests :: T.Text -> [TestName]
+findFailedTests log =
+  let l:_ = mapMaybe (T.stripPrefix "TEST=") $ T.lines log
+  in map TestName $ T.words $ T.dropAround (=='"') l
 
 worker :: ServerOpts -> TQueue BuildTask -> IO ()
 worker opts buildQueue = forever $ handle handleAny $ do
