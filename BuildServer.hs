@@ -44,7 +44,7 @@ serverOpts = ServerOpts
     <*> options
 
 phabBase :: BaseUrl
-phabBase = BaseUrl Https "phabricator.haskell.org" 80
+phabBase = BaseUrl Https "phabricator.haskell.org" 443
 
 handleAny :: SomeException -> IO ()
 handleAny = print
