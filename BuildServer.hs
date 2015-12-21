@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 
+import Control.Monad (forever, replicateM_)
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class
 import Control.Concurrent.STM
@@ -28,6 +29,12 @@ data ServerOpts = ServerOpts { maxBuilds :: Int  -- ^ maximum number of concurre
                              , buildOpts :: Options
                              }
 
+data BuildTask = BuildTask { buildPhid :: Phid
+                           , buildAction :: BuildM ExitCode
+                           }
+
+type BuildQueue = TQueue BuildTask
+
 serverOpts :: Parser ServerOpts
 serverOpts = ServerOpts
     <$> option auto (long "max-builds" <> short 'B' <> help "Maximum number of concurrent builds" <> value 1)
@@ -39,39 +46,41 @@ serverOpts = ServerOpts
 phabBase :: BaseUrl
 phabBase = BaseUrl Https "phabricator.haskell.org" 80
 
-app :: ServerOpts -> Application
-app opts = serve Api.api (server opts)
-
-main :: IO ()
-main = do
-  opts <- execParser $ info (helper <*> serverOpts) mempty
-  run (port opts) $ app opts
-  return ()
-
-server :: ServerOpts -> Server Api
-server opts = buildDiff opts :<|> buildCommit opts
-
-buildDiff :: ServerOpts
-          -> Maybe BuildId
-          -> Maybe Revision -> Maybe Diff
-          -> Maybe Commit -> Maybe Phid
-          -> EitherT ServantErr IO ()
-buildDiff opts (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) = do
-  liftIO $ runBuild opts phid $ testDiff rev diff baseCommit
-buildDiff _ _ _ _ _ _ = fail "ouch"
-
-buildCommit :: ServerOpts -> Maybe BuildId -> Maybe Commit -> Maybe Phid -> EitherT ServantErr IO ()
-buildCommit opts (Just buildId) (Just commit) (Just phid) =
-  liftIO $ runBuild opts phid $ testCommit commit
-buildCommit _ _ _ _ = fail "ouch"
-
-
-runBuild :: ServerOpts -> Phid -> BuildM ExitCode -> IO ()
-runBuild opts phid action = do
-  code <- runBuildM action (buildOpts opts)
+worker :: ServerOpts -> TQueue BuildTask -> IO ()
+worker opts buildQueue = forever $ do
+  b <- atomically $ readTQueue buildQueue
+  let phid = buildPhid b
+  code <- runBuildM (buildAction b) (buildOpts opts)
   r <- runEitherT $ case code of
     ExitSuccess   -> sendMessage phabBase (apiToken opts) phid $ Message TargetPassed []
     ExitFailure _ -> sendMessage phabBase (apiToken opts) phid $ Message TargetFailed []
   case r of
     Left err -> error $ show err
     Right () -> return ()
+
+main :: IO ()
+main = do
+  opts <- execParser $ info (helper <*> serverOpts) mempty
+  buildQueue <- newTQueueIO
+  replicateM_ (maxBuilds opts) $ worker opts buildQueue
+  run (port opts) $ serve Api.api $ server opts (atomically . writeTQueue buildQueue)
+  return ()
+
+server :: ServerOpts -> (BuildTask -> IO ()) -> Server Api
+server opts q = buildDiff opts q :<|> buildCommit opts q
+
+buildDiff :: ServerOpts -> (BuildTask -> IO ())
+          -> Maybe BuildId
+          -> Maybe Revision -> Maybe Diff
+          -> Maybe Commit -> Maybe Phid
+          -> EitherT ServantErr IO ()
+buildDiff opts queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) =
+  liftIO $ queueBuild $ BuildTask phid $ testDiff rev diff baseCommit
+buildDiff _ _ _ _ _ _ _ = fail "ouch"
+
+buildCommit :: ServerOpts -> (BuildTask -> IO ())
+            -> Maybe BuildId -> Maybe Commit -> Maybe Phid
+            -> EitherT ServantErr IO ()
+buildCommit opts queueBuild (Just buildId) (Just commit) (Just phid) =
+  liftIO $ queueBuild $ BuildTask phid $ testCommit commit
+buildCommit _ _ _ _ _ = fail "ouch"
