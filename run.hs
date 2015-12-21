@@ -14,9 +14,12 @@ import Build.Parsers
 
 main :: IO ()
 main = do
-    (opts, action) <- execParser $ info (helper <*> ((,) <$> options <*> task)) mempty
-    code <- flip runBuildM opts $ verbosely action
+    (opts, buildId, action) <- execParser $ info (helper <*> ((,,) <$> options <*> buildId <*> task)) mempty
+    code <- runBuildM (verbosely action) opts buildId
     exitWith code
+
+buildId :: Parser BuildId
+buildId = option (BuildId <$> auto) (short 'B' <> long "build-id")
 
 task :: Parser (BuildM ExitCode)
 task = subparser $ buildDiff <> buildCommit

@@ -70,18 +70,26 @@ sourceRepo = "git://git.haskell.org/ghc"
 
 data Options = Options { maxThreads :: Maybe Int
                        , referenceRepo :: Maybe FilePath
-                       , buildId :: BuildId
                        , archivePath :: FilePath
                        }
 
-type BuildM = ReaderT Options Sh
+data BuildDesc = BuildDesc Options BuildId
+
+type BuildM = ReaderT BuildDesc Sh
 
 getOptions :: BuildM Options
-getOptions = ask
+getOptions = do
+    BuildDesc opts _ <- ask
+    return opts
 
-runBuildM :: BuildM a -> Options -> IO a
-runBuildM action opts =
-    shelly $ runReaderT action opts
+getBuildId :: BuildM BuildId
+getBuildId = do
+    BuildDesc _ buildId <- ask
+    return buildId
+
+runBuildM :: BuildM a -> Options -> BuildId -> IO a
+runBuildM action opts bid =
+    shelly $ runReaderT action (BuildDesc opts bid)
 
 cpuCount :: BuildM Int
 cpuCount =
@@ -162,8 +170,9 @@ validate repoDir log = timeIt "validating" $ inRepo repoDir $ do
 archiveFile :: FilePath -> BuildM ()
 archiveFile path = do
     opts <- getOptions
+    bid <- getBuildId
     let compressedPath = path <.> "xz"
-        archiveDir = archivePath opts </> toText (buildId opts)
+        archiveDir = archivePath opts </> toText bid
     () <- cmd "xz" "-9f" path
     mkdir_p archiveDir
     mv compressedPath archiveDir

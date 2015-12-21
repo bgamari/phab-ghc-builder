@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DataKinds #-}
 
+import Control.Exception
 import Control.Monad (forever, replicateM_)
 import Control.Monad.Trans.Either
 import Control.Monad.IO.Class
@@ -47,11 +48,14 @@ serverOpts = ServerOpts
 phabBase :: BaseUrl
 phabBase = BaseUrl Https "phabricator.haskell.org" 80
 
+handleAny :: SomeException -> IO ()
+handleAny = print
+
 worker :: ServerOpts -> TQueue BuildTask -> IO ()
-worker opts buildQueue = forever $ do
+worker opts buildQueue = forever $ handle handleAny $ do
   b <- atomically $ readTQueue buildQueue
   let phid = buildPhid b
-  code <- runBuildM (buildAction b) (buildOpts opts)
+  code <- runBuildM (buildAction b) (buildOpts opts) (buildId b)
   r <- runEitherT $ case code of
     ExitSuccess   -> sendMessage phabBase (apiToken opts) phid $ Message TargetPassed []
     ExitFailure _ -> sendMessage phabBase (apiToken opts) phid $ Message TargetFailed []
