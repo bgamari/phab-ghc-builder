@@ -16,7 +16,6 @@ import System.IO.Temp
 
 import Servant
 import Servant.Client
-import           Network.Wai                          as Wai
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import Network.Wai.Handler.Warp as Warp
 
@@ -58,6 +57,7 @@ worker opts buildQueue = forever $ handle handleAny $ do
   withTempDirectory (rootDir opts) "build." $ \dir -> do
     let phid = buildPhid b
     code <- runBuildM (buildAction b dir) (buildOpts opts) (buildId b)
+    putStrLn $ "Finished with exit code "<>show code
     r <- runEitherT $ case code of
       ExitSuccess   -> sendMessage phabBase (apiToken opts) phid $ Message TargetPassed []
       ExitFailure _ -> sendMessage phabBase (apiToken opts) phid $ Message TargetFailed []
