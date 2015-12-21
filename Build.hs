@@ -164,6 +164,7 @@ testDiff rootDir rev diff baseCommit = chdir rootDir $ do
     updateSubmodules repoDir
     applyDiff repoDir diff
     updateSubmodules repoDir
+    touchfile "build.log"
     logPath <- canonicalize "build.log"
     code <- validate repoDir logPath
     archiveFile logPath
@@ -176,6 +177,7 @@ testCommit rootDir commit = chdir rootDir $ do
     cloneGhc repoDir
     checkout repoDir commit
     updateSubmodules repoDir
+    touchfile "build.log"
     logPath <- canonicalize "build.log"
     code <- validate repoDir logPath
     archiveFile logPath
