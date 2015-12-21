@@ -28,11 +28,20 @@ import Servant
 import Servant.Client
 import Phabricator.Types
 
+handleResponse :: Response a -> EitherT ServantError IO a
+handleResponse r
+  | Nothing <- respErrorCode r  = return $ respResult r
+  | Just err <- respErrorCode r =
+    error $ "Phabricator request failed with error code "++T.unpack err++": "
+         ++ maybe "No further details given" T.unpack (respErrorInfo r)
+
 sendMessage :: BaseUrl -> ApiToken -> Phid -> Message -> EitherT ServantError IO ()
-sendMessage baseUrl apiToken buildTargetPhid msg =
-    client api baseUrl (Just apiToken) (Just buildTargetPhid)
-                                       (Just $ msgType msg)
-                                       (Just $ AsJson $ msgUnits msg)
+sendMessage baseUrl apiToken buildTargetPhid msg = do
+    r <- client api baseUrl (Just apiToken) (Just buildTargetPhid)
+                                            (Just $ msgType msg)
+                                            (Just $ AsJson $ msgUnits msg)
+    _ <- handleResponse r
+    return ()
   where
     api :: Proxy SendMessage
     api = Proxy
@@ -43,7 +52,7 @@ type SendMessage = "api" :> "harbormaster.sendmessage"
                    :> QueryParam "buildTargetPHID" Phid
                    :> QueryParam "type" MessageType
                    :> QueryParam "unit" (AsJson [UnitResult])
-                   :> Get '[JSON] ()
+                   :> Get '[JSON] (Response JsonNull)
 
 data Message = Message { msgType  :: MessageType
                        , msgUnits :: [UnitResult]

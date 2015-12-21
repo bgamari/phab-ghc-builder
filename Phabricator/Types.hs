@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Phabricator.Types where
 
@@ -39,6 +40,18 @@ newtype Diff = Diff Integer
 newtype BuildId = BuildId Integer
                 deriving (Eq, Ord, Show)
 
+data Response a = Response { respResult :: a
+                           , respErrorCode :: Maybe T.Text
+                           , respErrorInfo :: Maybe T.Text
+                           }
+                deriving (Show)
+
+instance FromJSON a => FromJSON (Response a) where
+  parseJSON = withObject "response" $ \obj ->
+    Response <$> obj .: "result"
+             <*> obj .: "error_code"
+             <*> obj .: "error_info"
+
 fromTextPrefix :: Char -> T.Text -> Maybe Integer
 fromTextPrefix prefix s
   | c:rest <- T.unpack s
@@ -59,3 +72,12 @@ instance FromText Diff where fromText t = Diff <$> fromTextPrefix 'D' t
 
 instance ToText BuildId where toText (BuildId n) = toTextPrefix 'B' n
 instance FromText BuildId where fromText t = BuildId <$> fromTextPrefix 'B' t
+
+data JsonNull = JsonNull
+
+instance FromJSON JsonNull where
+  parseJSON Null = pure JsonNull
+  parseJSON v    = fail $ "Expected null, saw "++show v
+
+instance ToJSON JsonNull where
+  toJSON JsonNull = Null
