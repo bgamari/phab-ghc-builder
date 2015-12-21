@@ -25,7 +25,7 @@ data Comment = Comment { cmtBody   :: Maybe Remarkup
 createComment :: BaseUrl -> ApiToken -> Revision -> Comment -> EitherT ServantError IO ()
 createComment baseUrl apiToken rev cmt =
     client api baseUrl (Just apiToken) (Just rev)
-                                       (cmtBody cmt)
+                                       (render <$> cmtBody cmt)
                                        (cmtAction cmt)
                                        (cmtSilent cmt)
   where

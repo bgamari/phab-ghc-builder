@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Pharbricator.Remarkup
+module Phabricator.Remarkup
    ( -- * Basic types
      Remarkup
+   , render
      -- * Inline formatting
    , bold
    , italic
@@ -30,6 +31,9 @@ import Phabricator.Types
 
 newtype Remarkup = Markup T.Text
                  deriving (Show, ToJSON)
+
+render :: Remarkup -> T.Text
+render (Markup t) = t
 
 instance Monoid Remarkup where
   mempty = Markup mempty
@@ -62,7 +66,7 @@ highlighted :: Remarkup -> Remarkup
 highlighted = surround "!!"
 
 codeBlock :: T.Text -> Remarkup
-codeBlock = Markup $ "\n```"<>code<>"\n```"
+codeBlock code = Markup $ "\n```"<>code<>"\n```"
 
 list :: [Remarkup] -> Remarkup
 list = Markup . T.unlines . map (\(Markup t) -> " * "<>t)
