@@ -16,7 +16,7 @@ import Servant
 import Servant.Client
 import Phabricator.Types
 
-data Comment = Comment { cmtBody :: Maybe T.Text
+data Comment = Comment { cmtBody   :: Maybe T.Text
                        , cmtAction :: Maybe T.Text -- TODO
                        , cmtSilent :: Bool
                        }
