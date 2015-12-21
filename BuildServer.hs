@@ -16,6 +16,8 @@ import System.IO.Temp
 
 import Servant
 import Servant.Client
+import           Network.Wai                          as Wai
+import qualified Network.Wai.Middleware.RequestLogger as Wai
 import Network.Wai.Handler.Warp as Warp
 
 import Api
@@ -67,7 +69,7 @@ main = do
   opts <- execParser $ info (helper <*> serverOpts) mempty
   buildQueue <- newTQueueIO
   replicateM_ (maxBuilds opts) $ async $ worker opts buildQueue
-  Warp.run (port opts) $ serve Api.api $ server (atomically . writeTQueue buildQueue)
+  Warp.run (port opts) $ Wai.logStdoutDev $ serve Api.api $ server (atomically . writeTQueue buildQueue)
   return ()
 
 server :: (BuildTask -> IO ()) -> Server Api
