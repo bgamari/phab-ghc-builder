@@ -52,11 +52,11 @@ instance ToJSON a => ToText (AsJson a) where
   toText (AsJson v) = TL.toStrict $ TB.toLazyText $ encodeToTextBuilder $ toJSON v
 
 -- | The @harbormaster.sendmessage@ endpoint.
-type SendMessage = "api" :> "sendmessage"
+type SendMessage = "api" :> "harbormaster.sendmessage"
                    :> QueryParam "api.token" ApiToken
                    :> QueryParam "buildTargetPHID" Phid
                    :> QueryParam "type" MessageType
-                   :> QueryParam "units" (AsJson [UnitResult])
+                   :> QueryParam "unit" (AsJson [UnitResult])
                    :> Get '[JSON] ()
 
 data Message = Message { msgType  :: MessageType
