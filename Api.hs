@@ -8,7 +8,7 @@ module Api where
 import Servant
 
 import Build
-import Harbormaster
+import Phabricator.Harbormaster
 
 -- | Build a differential.
 -- @http://host/build/diff?id=B${build.id}&rev=R${buildable.revision}&diff=D${buildable.diff}&base_commit=${buildable.commit}&phid=${target.phid}@

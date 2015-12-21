@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DataKinds #-}
@@ -6,7 +5,7 @@
 -- | Harbormaster HTTP message
 -- See https://phabricator.haskell.org/conduit/method/harbormaster.sendmessage/
 
-module Harbormaster
+module Phabricator.Harbormaster
     ( -- * Harbormaster API
       sendMessage
     , Phid(..)
@@ -22,20 +21,12 @@ module Harbormaster
 import Control.Monad.Trans.Either
 
 import Data.Aeson
-import Data.Aeson.Encode
 import Data.Maybe
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Builder as TB
 
 import Servant
 import Servant.Client
-
-newtype Phid = Phid T.Text
-             deriving (Eq, Ord, Show, FromJSON, ToJSON, FromText, ToText)
-
-newtype ApiToken = ApiToken T.Text
-                 deriving (FromJSON, ToJSON, ToText)
+import Phabricator.Types
 
 sendMessage :: BaseUrl -> ApiToken -> Phid -> Message -> EitherT ServantError IO ()
 sendMessage baseUrl apiToken buildTargetPhid msg =
@@ -45,11 +36,6 @@ sendMessage baseUrl apiToken buildTargetPhid msg =
   where
     api :: Proxy SendMessage
     api = Proxy
-
-newtype AsJson a = AsJson a
-
-instance ToJSON a => ToText (AsJson a) where
-  toText (AsJson v) = TL.toStrict $ TB.toLazyText $ encodeToTextBuilder $ toJSON v
 
 -- | The @harbormaster.sendmessage@ endpoint.
 type SendMessage = "api" :> "harbormaster.sendmessage"
