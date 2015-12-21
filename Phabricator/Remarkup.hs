@@ -4,13 +4,17 @@
 module Pharbricator.Remarkup
    ( -- * Basic types
      Remarkup
-     -- * Formatting
+     -- * Inline formatting
    , bold
    , italic
    , monospace
    , deleted
    , underlined
    , highlighted
+     -- * Block elements
+     -- | These won't compose very well at the moment. FIXME
+   , codeBlock
+   , list
      -- * Lifting other entities into documents
    , ToMarkup(..)
    , mkup
@@ -56,6 +60,12 @@ underlined = surround "__"
 
 highlighted :: Remarkup -> Remarkup
 highlighted = surround "!!"
+
+codeBlock :: T.Text -> Remarkup
+codeBlock = Markup $ "\n```"<>code<>"\n```"
+
+list :: [Remarkup] -> Remarkup
+list = Markup . T.unlines . map (\(Markup t) -> " * "<>t)
 
 class ToMarkup a where
   toMarkup :: a -> Remarkup
