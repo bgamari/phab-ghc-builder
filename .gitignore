@@ -1,3 +1,7 @@
 *~
 *.hi
 *.o
+*.*_hi
+*.*_o
+phabricator/dist
+dist
