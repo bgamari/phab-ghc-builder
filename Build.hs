@@ -119,7 +119,7 @@ checkout repoDir (Commit commit) = timeIt "checking out commit" $ inRepo repoDir
 
 updateSubmodules :: RepoDir -> BuildM ()
 updateSubmodules repoDir = timeIt "updating submodules" $ inRepo repoDir $
-    cmd "git" "submodule" "update"
+    cmd "git" "submodule" "update" "--init"
 
 validate :: RepoDir -> FilePath -> BuildM ExitCode
 validate repoDir log = timeIt "validating" $ inRepo repoDir $ do
