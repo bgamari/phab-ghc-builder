@@ -19,7 +19,7 @@ import Servant
 import Servant.Client
 import qualified Network.Wai.Middleware.RequestLogger as Wai
 import Network.Wai.Handler.Warp as Warp
-import System.Logging.Facade
+import qualified System.Logging.Facade as Log
 
 import Api
 import Build
@@ -95,15 +95,15 @@ buildDiff :: (BuildTask -> IO ())
           -> Maybe Revision -> Maybe Diff
           -> Maybe Commit -> Maybe Phid
           -> EitherT ServantErr IO ()
-buildDiff queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) =
-  liftIO $ info "Building "<>show rev<>" "<>show diff<>" with base commit "<>show baseCommit
+buildDiff queueBuild (Just buildId) (Just rev) (Just diff) (Just baseCommit) (Just phid) = do
+  liftIO $ Log.info $ "Building "<>show rev<>" "<>show diff<>" with base commit "<>show baseCommit
   liftIO $ queueBuild $ BuildTask phid buildId $ \dir -> testDiff (fromString dir) rev diff baseCommit
 buildDiff _ a b c d e = fail $ "invalid build diff request"<>show (a,b,c,d,e)
 
 buildCommit :: (BuildTask -> IO ())
             -> Maybe BuildId -> Maybe Commit -> Maybe Phid
             -> EitherT ServantErr IO ()
-buildCommit queueBuild (Just buildId) (Just commit) (Just phid) =
-  liftIO $ info "Building commit "<>show commit
+buildCommit queueBuild (Just buildId) (Just commit) (Just phid) = do
+  liftIO $ Log.info $ "Building commit "<>show commit
   liftIO $ queueBuild $ BuildTask phid buildId $ \dir -> testCommit (fromString dir) commit
 buildCommit _ a b c = fail $ "invalid build commit request: "<>show (a,b,c)
