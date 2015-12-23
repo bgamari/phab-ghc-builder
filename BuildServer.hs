@@ -66,15 +66,16 @@ worker opts buildQueue = forever $ handle handleAny $ do
   b <- atomically $ readTQueue buildQueue
   withTempDirectory (rootDir opts) "build." $ \dir -> do
     let phid = buildPhid b
-    let handleError e = do liftIO $ print (e :: SomeException)
+    let handleError e = do liftIO $ Log.error $ show (e :: SomeException)
                            respond $ Message TargetFailed []
         respond msg = do
+          Log.info $ "Responded with "<>show (msgType msg)
           r <- runEitherT $ sendMessage phabBase (apiToken opts) phid msg
-          either print (const $ return ()) r
+          either (Log.error . show) (const $ return ()) r
     handle handleError $ do
-        --code <- runBuildM (buildAction b dir) (buildOpts opts) (buildId b)
+        code <- runBuildM (buildAction b dir) (buildOpts opts) (buildId b)
         let code = ExitSuccess
-        putStrLn $ "Finished with exit code "<>show code
+        Log.info $ "Finished with exit code "<>show code
         case code of
           ExitSuccess   -> respond $ Message TargetPassed []
           ExitFailure _ -> respond $ Message TargetFailed []

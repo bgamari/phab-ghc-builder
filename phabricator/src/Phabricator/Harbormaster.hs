@@ -54,6 +54,7 @@ data Message = Message { msgType  :: MessageType
 data MessageType = TargetPassed
                  | TargetFailed
                  | Work
+                 deriving (Show)
 
 data Outcome = Pass | Fail | Skip | Broken | Unsound
 
