@@ -8,7 +8,7 @@ import Build
 
 options :: Parser Options
 options = Options
-    <$> option auto
+    <$> option (Just <$> auto)
                (short 't' <> long "threads" <> value Nothing)
     <*> option (Just . fromString <$> str)
                (short 'r' <> long "reference-repo" <> value Nothing)
