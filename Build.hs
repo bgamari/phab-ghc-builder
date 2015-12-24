@@ -148,11 +148,14 @@ archiveFile path = do
 
 showTestsuiteSummary :: RepoDir -> BuildM ()
 showTestsuiteSummary (RepoDir dir) = do
-    c <- readfile (dir </> "testsuite_summary.txt")
-    liftIO $ do
-        putStrLn ""
-        putStrLn "================== Testsuite summary =================="
-        T.putStrLn c
+    let summary = dir </> "testsuite_summary.txt"
+    exists <- test_f summary
+    when exists $ do
+      c <- readfile summary
+      liftIO $ do
+          putStrLn ""
+          putStrLn "================== Testsuite summary =================="
+          T.putStrLn c
 
 testDiff :: FilePath -> Revision -> Diff -> Commit -> BuildM ExitCode
 testDiff rootDir rev diff baseCommit = chdir rootDir $ do
