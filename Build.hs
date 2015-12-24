@@ -95,14 +95,12 @@ cloneGhc (RepoDir repoDir) = timeIt "cloning tree" $ do
         refExists <- liftIO $ doesDirectoryExist (Path.encodeString refRepo)
         unless refExists $
             cmd "git" "clone" "--bare" sourceRepo refRepo
-        () <- cmd "git" "-C" refRepo "remote" "update"
-        () <- cmd "git" "-C" refRepo "submodule" "update"
-
         () <- cmd "git" "clone" "--reference" refRepo sourceRepo repoDir
         chdir repoDir $
             cmd "git" "submodule" "update" "--init"
-      Nothing ->
+      Nothing -> do
         cmd "git" "clone" sourceRepo repoDir
+        cmd "git" "submodule" "update" "--init"
 
 newtype RepoDir = RepoDir FilePath
 
