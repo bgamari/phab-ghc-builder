@@ -42,7 +42,7 @@ data BuildTask = BuildTask { buildPhid   :: Phid
 serverOpts :: Parser ServerOpts
 serverOpts = ServerOpts
     <$> option auto (long "max-builds" <> short 'B' <> help "Maximum number of concurrent builds" <> value 1)
-    <*> option auto (long "root" <> short 'd' <> help "Source root directory" <> value ".")
+    <*> option str (long "root" <> short 'd' <> help "Source root directory" <> value ".")
     <*> option auto (long "port" <> short 'p' <> help "Port number on which to listen" <> value 80)
     <*> option (ApiToken . T.pack <$> str) (long "api-token" <> short 'a' <> help "The API token to use to submit results back to Phabricator")
     <*> options
