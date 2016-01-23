@@ -16,7 +16,7 @@ import Control.Applicative
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Maybe
 import Control.Error
-import System.IO (openFile, IOMode(..))
+import System.IO (openFile, IOMode(..), hClose)
 import System.Directory
 import qualified Filesystem.Path.CurrentOS as Path
 import Prelude hiding (FilePath)
@@ -119,22 +119,31 @@ updateSubmodules :: RepoDir -> BuildM ()
 updateSubmodules repoDir = timeIt "updating submodules" $ inRepo repoDir $
     cmd "git" "submodule" "update" "--init"
 
-validate :: RepoDir -> FilePath -> BuildM ExitCode
-validate repoDir log = timeIt "validating" $ inRepo repoDir $ do
+logCmd :: String -> FilePath -> [Text] -> BuildM ExitCode
+logCmd logName cmd args = do
+    opts <- getOptions
+    let log = archivePath opts </> toText logName
     hdl <- liftIO $ openFile (Path.encodeString log) WriteMode
     let handles = [ OutHandle $ UseHandle hdl
                   , ErrorHandle $ UseHandle hdl
                   ]
-    errExit False $ do
-        opts <- getOptions
-        mapM_ (setenv "THREADS" . T.pack . show) (maxThreads opts)
-        runHandles "sh" ["validate"] handles (\_ _ _ -> return ())
-        c <- lastExitCode
-        case c of
-          0 -> do liftIO $ putStrLn "Validate finished successfully"
-                  return ExitSuccess
-          _ -> do liftIO $ putStrLn $ "Validate failed with exit code "<>show c
-                  return $ ExitFailure c
+    runHandles cmd args handles (\_ _ _ -> return ())
+    c <- lastExitCode
+    liftIO $ T.hPutStrLn hdl $ T.pack $ "Exited with code "<>show c
+    liftIO $ hClose hdl
+    return $ case c of
+                 0 -> ExitSuccess
+                 _ -> ExitFailure c
+
+validate :: RepoDir -> FilePath -> BuildM ExitCode
+validate repoDir log = timeIt "validating" $ inRepo repoDir $ errExit False $ do
+    opts <- getOptions
+    mapM_ (setenv "THREADS" . T.pack . show) (maxThreads opts)
+    c <- logCmd "validate" "sh" ["validate"]
+    liftIO $ putStrLn $ case c of
+                            ExitSuccess -> "Validate finished successfully"
+                            ExitFailure c -> "Validate failed with exit code "<>show c
+    return c
 
 archiveFile :: FilePath -> BuildM ()
 archiveFile path = do
@@ -156,6 +165,20 @@ showTestsuiteSummary (RepoDir dir) = do
           putStrLn ""
           putStrLn "================== Testsuite summary =================="
           T.putStrLn c
+
+getMakeVar :: RepoDir -> Text -> BuildM Text
+getMakeVar repoDir var = inRepo repoDir $ do
+    out <- cmd "make" "--silent" "show!" ("VALUE="<>var)
+    let res :: Maybe Text
+        res = T.stripPrefix (var<>"=\"") out >>= T.stripSuffix "\""
+    case res of
+        Just o -> pure o
+        Nothing -> fail $ "Failed to get make variable \""<>T.unpack out<>"\": "<>T.unpack out
+
+binaryDist :: RepoDir -> BuildM [FilePath]
+binaryDist repoDir = inRepo repoDir $ do
+    logCmd "bindist" "make" ["binary-dist"]
+    ls "*.tar.xz"
 
 testDiff :: FilePath -> Revision -> Diff -> Commit -> BuildM ExitCode
 testDiff rootDir rev diff baseCommit = chdir rootDir $ do
